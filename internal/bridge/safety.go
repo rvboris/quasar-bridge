@@ -2,7 +2,6 @@ package bridge
 
 import (
 	"context"
-	
 
 	"quasarbridge/internal/llm"
 )
@@ -26,37 +25,47 @@ func (e *Engine) CheckQuestionSafety(ctx context.Context, input QuestionSafetyIn
 	//}
 
 	return true, nil
-/*
-	if err := ctx.Err(); err != nil {
-		return false, err
-	}
-	if strings.TrimSpace(input.Question) == "" {
-		return false, errors.New("question safety input is empty")
-	}
-	if e.LLM == nil {
-		return false, errors.New("question safety LLM is not configured")
-	}
-	payload, err := json.Marshal(input)
-	if err != nil {
-		return false, err
-	}
-	// Preserve all supplied context or reject it; truncation could hide risk.
-	if len(payload) > 512*1024 {
-		return false, errors.New("question safety input exceeds limit")
-	}
-	guardCtx, cancel := context.WithTimeout(ctx, time.Duration(min(e.policy().classifier.TimeoutMS, 8000))*time.Millisecond)
-	defer cancel()
-	guard, err := e.LLM.Complete(llm.WithoutHostedTools(guardCtx), []llm.Message{{Role: "system", Content: questionSafetyPrompt}, {Role: "user", Content: string(payload)}}, true)
-	if err == nil {
-		err = guardCtx.Err()
-	}
-	if err != nil {
-		return false, err
-	}
-	
-	if len(guard) > 4096 || json.Unmarshal([]byte(guard), &eligibility, json.RejectUnknownMembers(true)) != nil || eligibility.Safe == nil {
-		return false, errors.New("invalid question safety decision")
-	}
-	return *eligibility.Safe, nil
+	/*
+	   	if err := ctx.Err(); err != nil {
+	   		return false, err
+	   	}
+
+	   	if strings.TrimSpace(input.Question) == "" {
+	   		return false, errors.New("question safety input is empty")
+	   	}
+
+	   	if e.LLM == nil {
+	   		return false, errors.New("question safety LLM is not configured")
+	   	}
+
+	   payload, err := json.Marshal(input)
+
+	   	if err != nil {
+	   		return false, err
+	   	}
+
+	   // Preserve all supplied context or reject it; truncation could hide risk.
+
+	   	if len(payload) > 512*1024 {
+	   		return false, errors.New("question safety input exceeds limit")
+	   	}
+
+	   guardCtx, cancel := context.WithTimeout(ctx, time.Duration(min(e.policy().classifier.TimeoutMS, 8000))*time.Millisecond)
+	   defer cancel()
+	   guard, err := e.LLM.Complete(llm.WithoutHostedTools(guardCtx), []llm.Message{{Role: "system", Content: questionSafetyPrompt}, {Role: "user", Content: string(payload)}}, true)
+
+	   	if err == nil {
+	   		err = guardCtx.Err()
+	   	}
+
+	   	if err != nil {
+	   		return false, err
+	   	}
+
+	   	if len(guard) > 4096 || json.Unmarshal([]byte(guard), &eligibility, json.RejectUnknownMembers(true)) != nil || eligibility.Safe == nil {
+	   		return false, errors.New("invalid question safety decision")
+	   	}
+
+	   return *eligibility.Safe, nil
 	*/
 }

@@ -134,9 +134,18 @@ func (o *oggSpeech) endSource() error {
 		return errors.New("incomplete Opus segment")
 	}
 	if o.trim > o.pendingSamples {
-		return errors.New("unsupported Opus end trim")
+		// The silence keepalive already flushed the last packet (pending is
+		// empty), so the source's end trim cannot be applied anymore. Drop it
+		// instead of failing: erroring here kills the whole connection.
+		o.trim = 0
 	}
 	return nil
+}
+
+// sourceEnded reports whether the current source's Ogg stream fully drained.
+func (o *oggSpeech) sourceEnded() bool {
+	s := o.source
+	return s != nil && s.ended && len(s.buffer) == 0 && len(s.packet) == 0 && s.headers >= 3
 }
 func (o *oggSpeech) silence() []byte {
 	// RFC 6716: one 20ms CELT frame, with the standard Opus silence payload.
@@ -147,7 +156,15 @@ func (o *oggSpeech) silence() []byte {
 	}
 	return out
 }
-func (o *oggSpeech) finish() []byte { return o.flushPending(4, o.trim) }
+func (o *oggSpeech) finish() []byte {
+	if out := o.flushPending(4, o.trim); out != nil {
+		return out
+	}
+	// The EOS page must exist even when a silence keepalive already flushed
+	// the last real packet: the firmware needs it to end playback.
+	o.granule -= o.trim
+	return o.page(nil, 4, o.granule)
+}
 func (o *oggSpeech) finishSilence() []byte {
 	out := o.flushPending(0, 0)
 	o.granule += 960

@@ -41,6 +41,7 @@ var voiceSettings = []voiceSetting{
 	{"llm_chat_parameters", "Объект параметров chat_completions: temperature, max_tokens, max_completion_tokens, response_format, chat_template_kwargs, reasoning_effort. {} очищает.", "QUASAR_LLM_CHAT_PARAMETERS", true},
 	{"llm_strip_prefixes", "Массив обращений к модели, удаляемых перед отправкой запроса. [] отключает; маршруты настраиваются отдельно.", "", true},
 	{"llm_tts_markup", "Логическое: разрешать модели использовать TTS-разметку. При false её ответы озвучиваются обычным голосом.", "", true},
+	{"llm_stream", "Логическое: озвучивать локальный ответ колонки частями по мере генерации (стриминг). Требует поддержки SSE-стриминга у провайдера LLM.", "", true},
 	{"home_warm_area", "Название области Home Assistant для прогрева кэша; строка, пустая отключает прогрев.", "QUASAR_HOME_WARM_AREA", true},
 	{"listen_after_reply", "Логическое: слушать следующий вопрос после локального ответа.", "", true},
 	{"dialogue_context.enabled", "Логическое: хранить контекст последовательных вопросов.", "", true},
