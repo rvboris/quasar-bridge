@@ -1,7 +1,7 @@
 name: checks
 on:
   push:
-    branches: [main]
+    branches: [main, streaming]
   pull_request:
   workflow_call:
     inputs:
