@@ -90,9 +90,13 @@ func (u *upstreamPool) send(ctx context.Context, k websocket.MessageType, data [
 		if err == nil {
 			return nil
 		}
-		// The write raced a re-dial swap: retry once on the fresh conn.
+		// The write raced a re-dial swap: retry on the fresh conn. This
+		// also covers conn already marked dead (nil): the sender then
+		// blocks on the alive channel instead of dropping the frame —
+		// the error path must only fire when this exact dead conn is
+		// still current (no re-dial machinery running).
 		u.mu.Lock()
-		replaced := u.conn != nil && u.conn != c
+		replaced := u.conn != c
 		u.mu.Unlock()
 		if replaced {
 			continue
