@@ -55,6 +55,21 @@ type RouteDecision struct {
 	Rule     string `json:"rule,omitempty"`
 	Source   string `json:"source"`
 }
+
+// Streamable reports whether this decision's answer may be streamed to the
+// station as deferred parts while it is still being generated: the LLM route
+// only, and not dialogue retry/reset continuations (their first part must
+// carry the reset bookkeeping before any speech).
+func (d RouteDecision) Streamable() bool {
+	if d.Route != "llm" {
+		return false
+	}
+	switch d.Source {
+	case "dialogue_retry", "dialogue_reset":
+		return false
+	}
+	return true
+}
 type compiledRule struct {
 	musicFromSite     bool // Only the unchanged shipped rule uses semantic music negation.
 	name, route       string

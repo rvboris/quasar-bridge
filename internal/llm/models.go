@@ -23,7 +23,11 @@ type Model struct {
 // Models returns the provider's ordered model catalog without running inference.
 // ChatGPT returns only models visible to the selected subscription account.
 func (c *Client) Models(ctx context.Context) ([]Model, error) {
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	timeout := c.Timeout
+	if timeout <= 0 {
+		timeout = 60 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	baseURL, token := strings.TrimRight(c.BaseURL, "/"), c.APIKey
 	switch c.API {

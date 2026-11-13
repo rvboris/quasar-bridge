@@ -50,9 +50,11 @@ type config struct {
 	LLMReasoningEffort string               `json:"llm_reasoning_effort"`
 	LLMMaxOutputTokens int                  `json:"llm_max_output_tokens"`
 	LLMHostedTools     []string             `json:"llm_hosted_tools"`
+	LLMTimeoutMS       int                  `json:"llm_timeout_ms"`
 	LLMChatParameters  map[string]any       `json:"llm_chat_parameters"`
 	LLMStripPrefixes   []string             `json:"llm_strip_prefixes"`
 	LLMTTSMarkup       bool                 `json:"llm_tts_markup"`
+	LLMStream          bool                 `json:"llm_stream"`
 	HomeWarmArea       string               `json:"home_warm_area"`
 	ListenAfterReply   bool                 `json:"listen_after_reply"`
 	Routing            bridge.RoutingConfig `json:"routing"`
@@ -150,6 +152,12 @@ func parseConfig(raw []byte, modelOptional bool) (config, error) {
 	}
 	if cfg.LLMMaxOutputTokens <= 0 {
 		return cfg, errors.New("llm_max_output_tokens must be positive")
+	}
+	if cfg.LLMTimeoutMS == 0 {
+		cfg.LLMTimeoutMS = 60000
+	}
+	if cfg.LLMTimeoutMS < 1000 || cfg.LLMTimeoutMS > 600000 {
+		return cfg, errors.New("llm_timeout_ms must be between 1000 and 600000")
 	}
 	if cfg.LLMReasoningEffort != "" {
 		if cfg.LLMAPI != "responses" && cfg.LLMAPI != "chatgpt" {

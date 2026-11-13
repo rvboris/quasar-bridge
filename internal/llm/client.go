@@ -51,6 +51,8 @@ type Client struct {
 	HostedTools     []string
 	ChatParameters  map[string]any
 	HTTP            *http.Client
+	// Timeout bounds each LLM HTTP request. Zero means the 60s default.
+	Timeout time.Duration
 	// AccessToken supplies renewable subscription credentials for the ChatGPT API.
 	// APIKey is never used in this mode.
 	AccessToken func(context.Context) (string, error)
@@ -170,7 +172,11 @@ func (c *Client) chatCompletions(ctx context.Context, messages []Message, struct
 }
 
 func (c *Client) post(ctx context.Context, path string, request any) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	timeout := c.Timeout
+	if timeout <= 0 {
+		timeout = 60 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	baseURL, apiKey := c.BaseURL, c.APIKey
 	if c.API == "chatgpt" {
@@ -250,4 +256,27 @@ func (c *Client) post(ctx context.Context, path string, request any) ([]byte, er
 		return nil, errors.New("LLM response exceeded size limit")
 	}
 	return data, nil
+}
+
+// CompleteDialogueStream lets the plain (tool-less) client serve the engine's
+// streaming answer path: content deltas flow to emit as they arrive, and the
+// dialogue answer is the trimmed final content. Private history is not managed
+// by this client and passes through unchanged. If the provider cannot stream,
+// it falls back to the non-streaming completion.
+func (c *Client) CompleteDialogueStream(ctx context.Context, messages []Message, private bool, emit func(string)) (string, bool, error) {
+	m, err := c.ChatStream(ctx, messages, nil, emit)
+	if errors.Is(err, ErrStreamNotStarted) {
+		answer, ferr := c.Complete(ctx, messages, false)
+		if ferr != nil {
+			return "", private, ferr
+		}
+		return answer, private, nil
+	}
+	if err != nil {
+		return "", private, err
+	}
+	if len(m.ToolCalls) > 0 {
+		return "", private, errors.New("unexpected tool call in plain completion")
+	}
+	return strings.TrimSpace(m.Content), private, nil
 }

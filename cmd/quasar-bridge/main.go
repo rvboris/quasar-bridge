@@ -155,7 +155,7 @@ func main() {
 	}
 	var clientCount, serverCount atomic.Int64
 	subscriptions := new(bridge.SubscriptionMonitor)
-	proxy := &bridge.Proxy{Subscriptions: subscriptions, Upstream: cfg.Upstream, Observer: func(direction string, kind websocket.MessageType, data []byte) {
+	proxy := &bridge.Proxy{Subscriptions: subscriptions, Upstream: cfg.Upstream, Redial: true, Observer: func(direction string, kind websocket.MessageType, data []byte) {
 		d := wire.ClientToServer
 		var count int64
 		if direction == "server" {
@@ -345,6 +345,7 @@ func main() {
 			n := bridge.NewNative(ctx, up, down, engine)
 			n.GateText = false
 			n.ShouldListen = cfg.ListenAfterReply
+			n.StreamAnswers = cfg.LLMStream
 			if cfg.LocalProgress.Enabled {
 				n.ProgressAfter = time.Duration(cfg.LocalProgress.AfterMS) * time.Millisecond
 				n.ProgressInterval = time.Duration(cfg.LocalProgress.IntervalMS) * time.Millisecond

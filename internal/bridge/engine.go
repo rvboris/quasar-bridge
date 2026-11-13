@@ -188,6 +188,16 @@ func (e *Engine) ResolveDecision(ctx context.Context, text string, decision Rout
 	}
 }
 func (e *Engine) Fallback(ctx context.Context, text string) (Resolution, error) {
+	return e.fallback(ctx, text, nil)
+}
+
+// FallbackStream is Fallback with incremental answer deltas delivered to emit.
+// Answerers without streaming support fall back to the plain completion path
+// and emit is ignored; the dialogue history always receives the full answer.
+func (e *Engine) FallbackStream(ctx context.Context, text string, emit func(string)) (Resolution, error) {
+	return e.fallback(ctx, text, emit)
+}
+func (e *Engine) fallback(ctx context.Context, text string, emit func(string)) (Resolution, error) {
 	if strings.Contains(strings.ToLower(text), "сайт") || webaddress.MusicRequest(text) {
 		text = webaddress.Normalize(text)
 	}
@@ -214,7 +224,11 @@ func (e *Engine) Fallback(ctx context.Context, text string) (Resolution, error) 
 	private := snapshot.PrivateHistory
 	var answer string
 	var err error
-	if contextual, ok := answerer.(interface {
+	if streamer, ok := answerer.(interface {
+		CompleteDialogueStream(context.Context, []llm.Message, bool, func(string)) (string, bool, error)
+	}); ok && emit != nil {
+		answer, private, err = streamer.CompleteDialogueStream(ctx, messages, private, emit)
+	} else if contextual, ok := answerer.(interface {
 		CompleteDialogue(context.Context, []llm.Message, bool) (string, bool, error)
 	}); ok {
 		answer, private, err = contextual.CompleteDialogue(ctx, messages, private)
