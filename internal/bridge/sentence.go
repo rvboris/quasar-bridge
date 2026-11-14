@@ -104,13 +104,17 @@ func (b *sentenceBuffer) cutLocked() {
 	b.chunks++
 }
 
-// cutLastWord splits s at its final whitespace boundary.
+// cutLastWord splits s at its final whitespace boundary. The separator
+// stays with the tail so head+tail == s byte-for-byte: emittedText must
+// reconstruct exactly what the model produced, or the final answer's
+// spoken-prefix trim diverges at the chunk join and re-speaks the tail
+// (heard as the answer repeating itself from a mid-sentence word).
 func cutLastWord(s string) (head, tail string, found bool) {
 	i := strings.LastIndexAny(s, " \t\n")
 	if i <= 0 {
 		return "", "", false
 	}
-	return s[:i], s[i+1:], true
+	return s[:i], s[i:], true
 }
 
 // Close stops the idle timer without flushing the tail.
