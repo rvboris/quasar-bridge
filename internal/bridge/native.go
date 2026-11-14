@@ -288,7 +288,6 @@ func (n *Native) Client(ctx context.Context, k websocket.MessageType, data []byt
 		p := n.requests[c.GetRequestMessageId()]
 		ttsID := ""
 		if p != nil {
-			slog.Info("dbg_cancel_req", "request", requestTag(p.id), "streaming", p.streaming, "synth_queued", len(n.pendingSynth))
 			// Soft teardown: keep the entry registered so late events from the
 			// firmware still match it (and are discarded as canceled); the
 			// expiry timer removes it for good.

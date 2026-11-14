@@ -211,18 +211,6 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var session Session
 	var trace *conversation
 	downSend := Sender(down.Write)
-	if dir := osGetenvDumpDir(); dir != "" {
-		dump := newFrameDump(dir, "down")
-		defer dump.close()
-		inner := downSend
-		downSend = func(ctx context.Context, k websocket.MessageType, data []byte) error {
-			if err := inner(ctx, k, data); err != nil {
-				return err
-			}
-			dump.write(data)
-			return nil
-		}
-	}
 	if p.Journal != nil {
 		trace = newConversation(p.Journal)
 		if p.NewSession != nil {
