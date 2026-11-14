@@ -20,6 +20,10 @@ import (
 // never begins mid-word; with no usable common prefix the whole string is
 // kept (exact=false) and the caller is expected to log the divergence.
 func trimSpokenPrefix(s, spoken string) (tail string, trimmed int, exact bool) {
+	// Leading whitespace in the spoken stream never carries speech and is
+	// absent from final answer texts; ignore it or the comparison diverges
+	// at byte zero.
+	spoken = strings.TrimLeft(spoken, " \t\n\r")
 	if spoken == "" {
 		return s, 0, true
 	}
