@@ -1150,6 +1150,14 @@ func (n *Native) emitChunk(p *nativeRequest, chunk string) error {
 	// issue #53). Strip before the chunk is shown, counted as emitted and
 	// synthesized so all three stay consistent.
 	chunk = stripWakeWords(chunk)
+	if p.emitMu.Lock(); p.emittedText == "" {
+		// The first delta may open with whitespace (a provider sends
+		// "\n\n" before the answer). Keep emittedText aligned with the
+		// final answer text or the spoken-prefix trim diverges at byte
+		// zero and re-speaks the whole answer.
+		chunk = strings.TrimLeft(chunk, " \t\n\r")
+	}
+	p.emitMu.Unlock()
 	if strings.TrimSpace(chunk) == "" {
 		return nil
 	}
