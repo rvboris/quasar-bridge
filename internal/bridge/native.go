@@ -904,8 +904,13 @@ func (n *Native) sendCancel(ctx context.Context, id string) error {
 	return n.up(ctx, websocket.MessageBinary, b)
 }
 func (n *Native) reply(p *nativeRequest, result Resolution) error {
-	text := result.Answer
-	speech := cmp.Or(result.speech, text)
+	// The station's spotter hears its own speaker: a wake word inside the
+	// answer triggers a false barge-in mid-answer (upstream issue #53).
+	// Strip it from both the displayed text and the speech before any
+	// prefix-trim, so the spoken tail stays consistent with emitted chunks
+	// (they are stripped at emission too).
+	text := stripWakeWords(result.Answer)
+	speech := stripWakeWords(cmp.Or(result.speech, result.Answer))
 	if p.streaming {
 		p.emitMu.Lock()
 		emitted := p.emittedText
@@ -1140,7 +1145,12 @@ func (n *Native) resolveFallback(p *nativeRequest, resolver FallbackResolver, qu
 // delivers one answer chunk as a non-final deferred part with its own TTS
 // synthesis.
 func (n *Native) emitChunk(p *nativeRequest, chunk string) error {
-	if chunk == "" {
+	// The station's spotter hears its own speaker: a wake word inside a
+	// chunk would trigger a false barge-in and kill the answer (upstream
+	// issue #53). Strip before the chunk is shown, counted as emitted and
+	// synthesized so all three stay consistent.
+	chunk = stripWakeWords(chunk)
+	if strings.TrimSpace(chunk) == "" {
 		return nil
 	}
 	n.mu.Lock()
