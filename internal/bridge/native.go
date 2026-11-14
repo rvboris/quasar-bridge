@@ -978,7 +978,6 @@ func (n *Native) reply(p *nativeRequest, result Resolution) error {
 // stream frames only (no TtsSpeak envelope), so the request is queued in
 // pendingSynth; the first frame of the next unknown stream claims it.
 func (n *Native) synthesize(p *nativeRequest, text string) error {
-func (n *Native) synthesize(p *nativeRequest, text string) error {
 	return n.synthesizeClaim(p, text, false, false)
 }
 func (n *Native) synthesizeFinal(p *nativeRequest, text string) error {
