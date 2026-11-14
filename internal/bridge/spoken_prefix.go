@@ -47,3 +47,15 @@ func commonPrefixLen(a, b string) int {
 	}
 	return n
 }
+
+// clip truncates s to at most limit runes for diagnostics logging.
+func clip(s string, limit int) string {
+	if len(s) <= limit {
+		return s
+	}
+	r := []rune(s)
+	if len(r) <= limit {
+		return s
+	}
+	return string(r[:limit]) + "…"
+}

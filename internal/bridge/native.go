@@ -932,6 +932,8 @@ func (n *Native) reply(p *nativeRequest, result Resolution) error {
 					"emitted_bytes", len(emitted),
 					"text_prefix_bytes", textCut,
 					"speech_prefix_bytes", speechCut,
+					"emitted_text", clip(emitted, 200),
+					"final_text", clip(text, 200),
 					"total", n.metrics.tailDivergences.Load())
 			}
 		}
