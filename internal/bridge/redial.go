@@ -12,6 +12,10 @@ import (
 )
 
 // UpstreamRedialed replays upstream-only state onto the fresh connection:
+//   - the station's last SynchronizeStateRequest goes first: without it the
+//     cloud answers music requests with a short "Включаю" and no
+//     InputStartAck/deferred media response, and the station reports
+//     error_class "other" on every play command until the bridge restarts;
 //   - cloud-routed requests get their original input (plus continuation when
 //     present) or, when gated, the Continue frame re-sent;
 //   - TTS synthesis claims still awaiting their raw audio stream are
@@ -25,6 +29,10 @@ func (n *Native) UpstreamRedialed(ctx context.Context) {
 	n.metrics.redials.Add(1)
 	var frames []frame
 	replayed := 0
+	var sync []byte
+	if n.syncState != nil {
+		sync = n.syncState
+	}
 	for _, p := range n.requests {
 		if p.canceled || p.local || !p.cloud {
 			continue
@@ -57,6 +65,13 @@ func (n *Native) UpstreamRedialed(ctx context.Context) {
 	}
 	n.metrics.claimsReplayed.Add(int64(replayed))
 	n.mu.Unlock()
+	if sync != nil {
+		if err := n.up(ctx, websocket.MessageBinary, sync); err != nil {
+			slog.Warn("native_redial_sync_replay_failed", "error", err.Error())
+		} else {
+			slog.Info("native_redial_sync_replayed", "bytes", len(sync))
+		}
+	}
 	sent := 0
 	for _, fr := range frames {
 		if err := n.up(ctx, websocket.MessageBinary, fr.data); err != nil {

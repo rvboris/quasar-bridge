@@ -115,6 +115,7 @@ type Native struct {
 	streams          map[uint32]*nativeRequest
 	streamFinal      map[uint32]bool // raw synth streams that are their request's final source
 	blocked          map[uint32]*nativeRequest
+	syncState        []byte // last SynchronizeStateRequest from the station, replayed after upstream re-dial (guarded by n.mu)
 	pendingSynth     []synthClaim // FIFO of issued TtsGenerate requests awaiting their raw audio stream.
 	wg               sync.WaitGroup
 	metrics          connectionMetrics
@@ -152,6 +153,15 @@ func (n *Native) Client(ctx context.Context, k websocket.MessageType, data []byt
 		return n.up(ctx, k, data)
 	}
 	e := f.Client.GetEvent()
+	if f.Kind() == "SynchronizeStateRequest" {
+		// Cache the station's session handshake: the cloud binds the media
+		// session to the wire it was presented on, so after an upstream
+		// re-dial the frame must reach the fresh connection first.
+		n.mu.Lock()
+		n.syncState = append([]byte(nil), data...)
+		n.mu.Unlock()
+		slog.Info("native_sync_state_cached", "bytes", len(data))
+	}
 	if stat := e.GetRequestStat(); stat != nil {
 		kind := "none"
 		raw := strings.ToLower(stat.GetError())
