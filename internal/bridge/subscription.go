@@ -67,6 +67,16 @@ func (m *SubscriptionMonitor) NewSession(up, down Sender, delegate Session) Sess
 	return s
 }
 
+// UpstreamRedialed forwards the proxy's re-dial callback to the wrapped
+// session: without this pass-through the proxy's UpstreamRedialer assertion
+// fails and neither the SynchronizeStateRequest replay nor the pending-request
+// replay ever runs.
+func (s *subscriptionSession) UpstreamRedialed(ctx context.Context) {
+	if rd, ok := s.delegate.(UpstreamRedialer); ok {
+		rd.UpstreamRedialed(ctx)
+	}
+}
+
 // Snapshot contains active connections only; reconnects start with unknown state.
 func (m *SubscriptionMonitor) Snapshot() []SpeakerSubscription {
 	m.mu.Lock()
